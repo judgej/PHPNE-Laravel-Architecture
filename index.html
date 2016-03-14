@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>reveal.js – The HTML Presentation Framework</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Hakim El Hattab">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Laravel 5.1 App Architecture</h1>
+					<h3>Big Building Block Design Decisions</h3>
+					<p>
+						<small>by <a href="http://academe.co.uk">Jason Judge</a> / <a href="http://twitter.com/JasonDJudge">@JasonDJudge</a></small>
+					</p>
+				</section>
+
+				<section data-markdown>
+					# Introducing
+
+					* Commands
+					* Jobs
+					* Events
+					* Sheduler
+					* Queues
+
+					What they are ~ When to use them ~ How they work
+				</section>
+
+
+				<section data-background="#cc9999">
+					<section data-markdown>
+						# Commands
+
+						* Runs as CLI
+						* `artisan` is the shell interface
+						* Handles stdin, stdout, params, options
+						* Can be interactive (prompts, menus, progress bar)
+						* Closely linked to scheduler
+						* L5.0 "commands" are now "jobs"
+					</section>
+
+					<section data-markdown>
+						# Commands
+
+						## Where do they come from?
+
+						* Many built-in
+						* Custom commands under `App\Console\Commands`
+						* Packages can bring their own
+					</section>
+
+					<section data-markdown>
+						# Commands
+
+						## What goes in them?
+
+						* Just the user interface (keep it lean)
+							* Input
+							* Output
+							* Final result code
+						* Exception handler can be handy
+					</section>
+
+					<section data-markdown>
+						# Commands
+
+						## Example - define it
+
+						<pre><code>
+							&lt;?php namespace App\Console\Commands;
+
+							class Hello extends Command
+							{
+								protected $signature = 'demo:hello';
+								public function handle()
+								{
+									$this->info(sprintf(
+										'Number of params: %d',
+										count($this->argument())
+									));
+								}
+							}
+						</code></pre>
+					</section>
+
+
+					<section data-markdown>
+						# Commands
+
+						## Example - register it
+
+						<pre><code>
+							&lt;?php namespace App\Console;
+
+							class Kernel extends ConsoleKernel
+							{
+								protected $commands = [
+									...
+									\App\Console\Commands\Hello::class,
+								];
+							}
+						</code></pre>
+					</section>
+
+					<section data-markdown>
+						# Commands
+
+						## Example - run it
+
+						<code class="bash">
+							$ ./artisan demo:hello 1 2 3
+							Number of params: 3
+							$
+						</code>
+
+						There are commands to help you create commands.
+
+						Can also run a command from a controller.
+						But why?
+					</section>
+				</section>
+
+
+
+				<section data-background="#99cc99">
+					<section data-markdown>
+						# Queues
+
+						* Certain objects can be run **asynchronously**
+							* Commands
+							* Jobs
+							* Events
+
+						* Various mechanisms for implementing the queue
+							* Database
+							* Beanstalkd
+							* IronMQ
+							* etc. basically all FIFO
+					</section>
+
+					<section data-markdown>
+						# Queues
+
+						* The mechanics:
+							* Object serialised and thrown onto a queue
+							* A queue worker deserialises and executes the object
+
+						Laravel wraps queued tasks with into objects that *just run*;
+						it does all the hard work for you
+
+						A job can be set so it is queued by default when dispatched
+					</section>
+				</section>
+
+
+
+
+				<section data-background="#9999cc">
+					<section data-markdown>
+						# Jobs
+
+						A job is a self-contained block of processing that has no
+						user unteraction.
+
+						It is usually run asynchronously; we don't need to wait for it to finish.
+
+						Examples: send an email, run a report, archive old data.
+					</section>
+
+					<section data-markdown>
+						# Jobs
+
+						Give a job a job class the `ShouldQueue` interface, and it will queue
+						automatically when dispatched.
+
+						<pre><code>
+							&lt;?php namespace App\Jobs;
+							use Illuminate\Contracts\Queue\ShouldQueue;
+
+							class CheckOrders extends Job implemkents ShouldQueue
+							{
+								public __construct($data_to_work_on) {
+									$this->data_to_work_on = $data_to_work_on;
+								}
+
+								public function handle(AnyProvider $provider, ...)
+								{
+									// Do its stuff
+								}
+							}
+						</code></pre>
+					</section>
+
+					<section data-markdown>
+						# Jobs
+
+						## When would you dispatch a job?
+
+						* To separate the trigger from the action
+							* When something happens (an event) something else needs to be done (the job)
+						* When you need to return control to the user quickly
+							* Dispatch an asynchronous job
+					</section>
+
+				</section>
+
+
+
+				<section data-background="#99cc33">
+					<section data-markdown>
+						# Events
+
+						Events are a game of two halves:
+
+						* Registered events *happen*
+						* Listeners are *notified*
+					</section>
+
+					<section data-markdown>
+						# Events
+
+						## The event architecture
+
+						* Ultimately each event has a name and an event class
+						* The event class holds the data for the event listeners
+						* One or more listeners can be registered against an event name
+						* The listener is handed the event (with its data) when despatched
+						* A listener can be a class or a closure
+					</section>
+
+					<section data-markdown>
+						# Events
+
+						## Where are events defined?
+
+						Mostly:
+
+						* System events
+						* Eloquent events
+						* Custom events
+					</section>
+
+					<section data-markdown>
+						# Events
+
+						## Syntactic sugar
+
+						Next three slides are all equivalent.
+
+						<pre><code>
+							// Register a closure to run when the Order model is updated.
+
+							\App\Order::updated(function(\App\Order $order) {
+								// Do stuff given order
+							});
+						</code></pre>
+					</section>
+
+					<section data-markdown>
+						# Events
+
+						## Syntactic sugar
+						<pre><code>
+							// What the eloquent "updated" event registration actually does.
+
+							Event::listen(
+								'eloquent.updated: App\Order', // Event name
+								function(\App\Order $order) {
+									// Do stuff given order
+								}
+							);
+						</code></pre>
+					</section>
+
+					<section data-markdown>
+						# Events
+
+						## Syntactic sugar
+						<pre><code>
+							&lt;?php namespace App\Providers;
+
+							class EventServiceProvider extends ServiceProvider
+							{
+								protected $listen = [
+									'eloquent.updated: App\Order' => [
+										// Custom listener class to do stuff
+										'App\Listener\OrderUpdated',
+									],
+									...
+								];
+							}
+						</code></pre>
+					</section>
+
+					<section data-markdown>
+						# Events
+
+						The provider listener array is for custom listener classes.
+
+						<pre><code>
+							&lt;?php namespace App\Providers;
+
+							class EventServiceProvider extends ServiceProvider
+							{
+								protected $listen = [
+									'App\Events\OrderComplete' => [
+										// Custom listener class to do stuff
+										'App\Listener\OrderComplete',
+									],
+									...
+								];
+							}
+						</code></pre>
+
+						Then fire the `App\Events\OrderComplete` event from the eloquent `updated` event when the
+						status of the order goes to "COMPLETE".
+					</section>
+
+					<section data-markdown>
+						# Events
+
+						If order has changed to COMPLETE then fire the custom event.
+
+						<pre><code>
+							\App\Order::updated(function(\App\Order $order) {
+								// Order has changed status to COMPLETE.
+								if (
+									$order->getOriginal()['status'] != 'COMPLETE'
+									&& $order->status == 'COMPLETE'
+								) {
+									Event::fire(new App\Events\OrderComplete($order));
+								}
+							});
+						</code></pre>
+
+						An artisan command will create the event and listener classes from
+						the array in the event provider.
+					</section>
+
+				</section>
+
+
+
+				<section data-background="#cc3333">
+					<section data-markdown>
+						# Task Scheduling
+
+						Using `cron` you can schedule artisan commands to run at different times and intervals.
+
+						<pre><code>
+							# crontab
+							# send outstanding emails every five minutes
+							*/5 * * * * php artisan demo:send_emails
+							# send payment reminders at 8am daily
+							0 8 * * * php artisan demo:send_payment_reminders
+							# etc
+						</code></pre>
+
+						Or let laravel manage the schedules in code for you.
+
+						<pre><code>
+							# Call scheduler every minute
+							* * * * * php artisan schedule:run >/dev/null 2>&1
+						</code></pre>
+					</section>
+
+					<section data-markdown>
+						# Task Scheduling
+
+						<pre><code>
+							&lt;?php namespace App\Console;
+
+							class Kernel extends ConsoleKernel
+							{
+								protected function schedule(Schedule $schedule)
+								{
+									$schedule->command('demo:send_payment_reminders')
+										->dailyAt('8:00');
+
+									// etc for other jobs
+								}
+							}
+						</code></pre>
+
+						The fluent scheduling options build into a cron schedule.
+						Each minute Laravel then decides which of the console commands to run.
+					</section>
+
+					<section data-markdown>
+						# Task Scheduling
+
+						* All commands will run as if from the command line (system shell, artisan).
+						* A command can be set to never run concurrently with itself (long running commands).
+						* The schedule can be a custom function.
+						* If a command misses its time slot, then it waits for next time.
+						* Output can be directed to a log file.
+					</section>
+
+				</section>
+
+				<section data-background="#3333cc">
+					<section data-markdown>
+						# Summary
+
+						* **Commands** run through artisan and can be scheduled or queued.
+						* **Jobs** have no user interaction and can be run asynchronously (i.e. queued).
+						* **Events** help separate logic and keep each domain cleaner.
+						* **Scheduled Tasks** schedule commands through code.
+						* All these help to keep the app fast and responsive and easily extendable.
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
