@@ -17,6 +17,9 @@ The features include:
 The code samples leave out various sections for clarity, so use them in conjunction
 with the officials Laravel 5.1 documentation.
 
+There are no speaker notes yet - I intend to add those to provide some reasoning
+behind examples.
+
 ## License
 
 MIT licensed
