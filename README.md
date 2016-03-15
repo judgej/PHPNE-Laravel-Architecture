@@ -13,6 +13,7 @@ The features include:
 * Jobs
 * Scheduled Tasks
 * Events
+* Queues
 
 The code samples leave out various sections for clarity, so use them in conjunction
 with the officials Laravel 5.1 documentation.

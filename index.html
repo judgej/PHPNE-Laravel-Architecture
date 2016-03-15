@@ -48,7 +48,7 @@
 					</p>
 				</section>
 
-				<section data-markdown>
+				<section data-markdown data-separator-notes="^Note:">
 					# Introducing
 
 					* Commands
@@ -58,10 +58,15 @@
 					* Queues
 
 					What they are ~ When to use them ~ How they work
+
+					Note:
+					- Not intending to cover how to use them; see the L5.1 docs.
+					- L5.1 rather than 5.2 as it is an LTS release.
+					- Please interrupt to ask questions at any time
 				</section>
 
 
-				<section data-background="#cc9999">
+				<section data-background="#cc9999" data-separator-notes="^Note:">
 					<section data-markdown>
 						# Commands
 
@@ -71,6 +76,10 @@
 						* Can be interactive (prompts, menus, progress bar)
 						* Closely linked to scheduler
 						* L5.0 "commands" are now "jobs"
+
+						Note:
+						- artisan is a PHP shell script.
+						- Can be piped, redirected etc like any shell command.
 					</section>
 
 					<section data-markdown>
@@ -81,6 +90,13 @@
 						* Many built-in
 						* Custom commands under `App\Console\Commands`
 						* Packages can bring their own
+						* Run `artisan` so see the list of commands
+						* Organised into groups (a scope)
+
+						Note:
+						- Scopes include route, migrate, make, etc.
+						- Commands recognise and support applications that are more than
+						  just web requests; very powerful.
 					</section>
 
 					<section data-markdown>
@@ -89,10 +105,17 @@
 						## What goes in them?
 
 						* Just the user interface (keep it lean)
-							* Input
+							* Input (stdin and prompted)
 							* Output
+							* Arguments and Options
 							* Final result code
 						* Exception handler can be handy
+
+						Note:
+						- The command is just a shell for interacting with the user.
+						- The main functionality should really be put somewhere else.
+						- Letting exceptions fall through is a last resort; try to catch 
+						  and present a user error.
 					</section>
 
 					<section data-markdown>
@@ -109,12 +132,17 @@
 								public function handle()
 								{
 									$this->info(sprintf(
-										'Number of params: %d',
+										'Number of arguments: %d',
 										count($this->argument())
 									));
 								}
 							}
 						</code></pre>
+
+						Note:
+						- A very simple command to tell you how many parameters have been passed in.
+						- Shows output (info message) and access to arguments.
+						- As elsewhere, much left out of this for clarity; read the official docs.
 					</section>
 
 
@@ -128,18 +156,25 @@
 
 							class Kernel extends ConsoleKernel
 							{
+								// This array registers custom commands with Laravel.
+
 								protected $commands = [
 									...
 									\App\Console\Commands\Hello::class,
 								];
 							}
 						</code></pre>
+
+						Note:
+						- Each command given as the full namespaced name.
 					</section>
 
 					<section data-markdown>
 						# Commands
 
 						## Example - run it
+
+						From the bash shell command line:
 
 						<code class="bash">
 							$ ./artisan demo:hello 1 2 3
@@ -151,60 +186,86 @@
 
 						Can also run a command from a controller.
 						But why?
+
+						Note:
+						- This is run from a shell prompt here.
+						- Keep commands for CLI interaction; there are better ways to
+						  run code through a controller.
 					</section>
 				</section>
 
 
 
-				<section data-background="#99cc99">
+				<section data-background="#99cc99" data-separator-notes="^Note:">
 					<section data-markdown>
 						# Queues
+
+						## Purpose
 
 						* Certain objects can be run **asynchronously**
 							* Commands
 							* Jobs
 							* Events
 
-						* Various mechanisms for implementing the queue
-							* Database
-							* Beanstalkd
-							* IronMQ
-							* etc. basically all FIFO
+						A queueing system is where these objects queue up, waiting to be processed.
+
+						Note:
+						- A queue is generally FIFO and is dumb - it just holds some data.
 					</section>
 
 					<section data-markdown>
 						# Queues
 
-						* The mechanics:
-							* Object serialised and thrown onto a queue
-							* A queue worker deserialises and executes the object
+						## Queue Management Services
+
+						* Database
+						* Beanstalkd
+						* IronMQ
+						* etc.
+
+						Note:
+						- Database requires no additional tools or system services,
+						  and is good for development.
+					</section>
+
+					<section data-markdown>
+						# Queues
+
+						## The Laravel approach
+
+						* Object serialised and thrown onto a queue
+						* A queue worker deserialises and executes the object
 
 						Laravel wraps queued tasks with into objects that *just run*;
 						it does all the hard work for you
 
 						A job can be set so it is queued by default when dispatched
+
+						Note:
+						- Object is JSON serialised.
+						- Laravel tries to store IDs rather than objects, so it can fatch them later.
 					</section>
 				</section>
 
 
-
-
-				<section data-background="#9999cc">
+				<section data-background="#9999cc" data-separator-notes="^Note:">
 					<section data-markdown>
 						# Jobs
 
-						A job is a self-contained block of processing that has no
-						user unteraction.
+						* A job is a self-contained block of processing that has no
+						user interaction.
+						* A job is *usually* run asynchronously; we don't need to wait for it to finish.
+						* Examples: send an email, run a report, archive old data.
 
-						It is usually run asynchronously; we don't need to wait for it to finish.
-
-						Examples: send an email, run a report, archive old data.
+						Note:
+						- It can interact using event broadcasting, connecting it to
+						  the user's browser through a complex channel.
 					</section>
 
 					<section data-markdown>
 						# Jobs
 
-						Give a job a job class the `ShouldQueue` interface, and it will queue
+						Give a job class the `ShouldQueue` interface, and it will queue
 						automatically when dispatched.
 
 						<pre><code>
@@ -223,6 +284,10 @@
 								}
 							}
 						</code></pre>
+
+						Note:
+						- The majority of jobs will be run like this; it is the main
+						  purpose of jobs.
 					</section>
 
 					<section data-markdown>
@@ -234,13 +299,16 @@
 							* When something happens (an event) something else needs to be done (the job)
 						* When you need to return control to the user quickly
 							* Dispatch an asynchronous job
+
+						Note:
+						- A trigger may fire one job today, and several jobs tomorrow as requirements unfold.
 					</section>
 
 				</section>
 
 
 
-				<section data-background="#99cc33">
+				<section data-background="#99cc33" data-separator-notes="^Note:">
 					<section data-markdown>
 						# Events
 
@@ -248,6 +316,10 @@
 
 						* Registered events *happen*
 						* Listeners are *notified*
+
+						Note:
+						- Listeners don't actually "listen". They register themselves and are
+						  notified when they are needed.
 					</section>
 
 					<section data-markdown>
@@ -257,9 +329,14 @@
 
 						* Ultimately each event has a name and an event class
 						* The event class holds the data for the event listeners
-						* One or more listeners can be registered against an event name
+						* One or more listeners can be registered against an event
 						* The listener is handed the event (with its data) when despatched
 						* A listener can be a class or a closure
+
+						Note:
+						- The L5.1 documentation shows events looking in at different abstract levels,
+						  and that can hide much of its depth.
+						- Registered listeners are just in a big array, keyed on the event name.
 					</section>
 
 					<section data-markdown>
@@ -272,6 +349,9 @@
 						* System events
 						* Eloquent events
 						* Custom events
+
+						Note:
+						- Often custom events will be fired from eloquent events, after a simple check.
 					</section>
 
 					<section data-markdown>
@@ -288,6 +368,9 @@
 								// Do stuff given order
 							});
 						</code></pre>
+
+						Note:
+						- We register a closure as an "updated" event on the Eloquent model.
 					</section>
 
 					<section data-markdown>
@@ -304,6 +387,10 @@
 								}
 							);
 						</code></pre>
+
+						Note:
+						- This is the name of the event that the previous example constructs and registers for you.
+						- This name is used here just to understand; it may change in Laravel core, so buyer beware.
 					</section>
 
 					<section data-markdown>
@@ -324,6 +411,9 @@
 								];
 							}
 						</code></pre>
+
+						Note:
+						- This $listen array is just a convenince, and nothing special.
 					</section>
 
 					<section data-markdown>
@@ -348,12 +438,16 @@
 
 						Then fire the `App\Events\OrderComplete` event from the eloquent `updated` event when the
 						status of the order goes to "COMPLETE".
+
+						Note:
+						- The name of a custom event is its namespaced name.
 					</section>
 
 					<section data-markdown>
 						# Events
 
-						If order has changed to COMPLETE then fire the custom event.
+						If order has changed to COMPLETE then fire the custom event
+						from this `updated` Eloquent event.
 
 						<pre><code>
 							\App\Order::updated(function(\App\Order $order) {
@@ -369,13 +463,17 @@
 
 						An artisan command will create the event and listener classes from
 						the array in the event provider.
+
+						Note:
+						- Register this during the application boot; you want to register events and
+						  listeners early.
 					</section>
 
 				</section>
 
 
 
-				<section data-background="#cc3333">
+				<section data-background="#cc3333" data-separator-notes="^Note:">
 					<section data-markdown>
 						# Task Scheduling
 
@@ -396,6 +494,9 @@
 							# Call scheduler every minute
 							* * * * * php artisan schedule:run >/dev/null 2>&1
 						</code></pre>
+
+						Note:
+						- The cron shedule parameters are great, but not friendly.
 					</section>
 
 					<section data-markdown>
@@ -418,6 +519,9 @@
 
 						The fluent scheduling options build into a cron schedule.
 						Each minute Laravel then decides which of the console commands to run.
+
+						Note:
+						- There is a great range of fluent schedule options.
 					</section>
 
 					<section data-markdown>
@@ -428,19 +532,42 @@
 						* The schedule can be a custom function.
 						* If a command misses its time slot, then it waits for next time.
 						* Output can be directed to a log file.
+
+						Note:
+						- Often scheduled commands must not be allowed to run concurrently.
+						- A custom schedule may run a command every hour, during each weekend after fulk Moon.
+						  cron could never do that.
 					</section>
 
 				</section>
 
-				<section data-background="#3333cc">
+				<section data-background="#3333cc" data-separator-notes="^Note:">
 					<section data-markdown>
 						# Summary
 
 						* **Commands** run through artisan and can be scheduled or queued.
 						* **Jobs** have no user interaction and can be run asynchronously (i.e. queued).
-						* **Events** help separate logic and keep each domain cleaner.
+						* **Events** help separate concerns and keep each unit cleaner.
 						* **Scheduled Tasks** schedule commands through code.
 						* All these help to keep the app fast and responsive and easily extendable.
+
+						Note:
+						- None
+					</section>
+
+					<section data-markdown>
+						Pulling all these components together
+						![Example system overview](Drawing1.png)
+
+						Note:
+						- A command fetches remote transactions and stores them in a model.
+						- The model fires a created event which fires a custom New Transaction job.
+						- The job is deserialised from the queue, given the transaction, which it can then process.
+					</section>
+
+					<section data-markdown>
+						# Thank you :-)
+					</section>
 				</section>
 
 			</div>
@@ -459,6 +586,7 @@
 				progress: true,
 				history: true,
 				center: true,
+				showNotes: false,
 
 				transition: 'slide', // none/fade/slide/convex/concave/zoom
 
