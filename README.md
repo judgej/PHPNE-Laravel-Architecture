@@ -4,6 +4,10 @@ This short talk aims to quickly pull together the concepts of some of the buildi
 blocks of a Laravel 5.1 application. They include features that have been in Laravel
 for some time, in various forms, but which some people may not be familier.
 
+Slides are hosted here:
+
+http://judgej.github.io/PHPNE-Laravel-Architecture/#/
+
 The Laravel documentation goes into detail in how to use these features, but leaves
 out any wider descriptions on how to recognise when you need to use them.
 
