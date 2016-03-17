@@ -572,7 +572,8 @@
 						  by the queue and triggered by an event.
 						- A command fetches remote transactions and stores them in a model.
 						- The model fires a created event which fires a custom New Transaction job.
-						- The job is deserialised from the queue, given the transaction, which it can then process.
+						- The job is deserialised from the queue, given the transaction, which it can then process
+						  adding to a batch in this case (creating a new batch in the process if necessary).
 					</section>
 
 					<section data-markdown>
